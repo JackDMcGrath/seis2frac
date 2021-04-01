@@ -13,7 +13,7 @@ binCapacity=20; % Maximum number of events > MOC in OcTree
 style='Normal'; % OcTree division method ('Normal' or 'Weighted')
 grdShape='Cube'; % Shape of OcTree grids ('Normal' or 'Cube')
 dip=60; % set fault dip
-fault_base=100;%35; % set depth of fault
+fault_base=35; % set depth of fault
 search_lims=[250,40,30]; % Area to search in km (x,y,z)
 
 %Rock properties
