@@ -1,6 +1,6 @@
 %% SEIS2FRAC
 % Script for analysing seismicity and relating to fracture propeties
-
+fprintf('This should be branch MAIN\n')
 %% Setup
 % Admin
 plot_figures=0;
