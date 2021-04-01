@@ -77,7 +77,8 @@ classdef OcTree < handle
 %   Created by Sven Holcombe.
 %   1.0     - 2013-03 Initial release
 %   1.1     - 2013-03 Added shrinking bins and allocate/deallocate space
-%   1.2     - 2021-04 Added Cube grids - Jack McGrath
+%   1.2     - 2021-04 Added Cube grids - JDM
+%   1.2     - 2021-04 Added Corner variables - JDM
 %
 %   Please post comments to the FEX page for this entry if you have any
 %   bugs or feature requests.
@@ -90,6 +91,7 @@ classdef OcTree < handle
         BinDepths;
         BinParents = zeros(0,1);
         Properties;
+        BinCorners;
     end
     
     methods
@@ -109,6 +111,7 @@ classdef OcTree < handle
             this.BinDepths = 0;
             this.BinParents(1) = 0;
             this.BinCount = 1;
+            this.BinCorners = [];
             
             % Allow custom setting of Properties
             IP = inputParser;
@@ -358,15 +361,27 @@ classdef OcTree < handle
             % object handles (one per bin) to H.
             hold on;
             h = zeros(this.BinCount,1);
-            for i = 1:this.BinCount
-                binMinMax = this.BinBoundaries(i,:);
-                pts = cat(1, binMinMax([...
-                    1 2 3; 4 2 3; 4 5 3; 1 5 3; 1 2 3;...
-                    1 2 6; 4 2 6; 4 5 6; 1 5 6; 1 2 6; 1 2 3]),...
-                    nan(1,3), binMinMax([4 2 3; 4 2 6]),...
-                    nan(1,3), binMinMax([4 5 3; 4 5 6]),...
-                    nan(1,3), binMinMax([1 5 3; 1 5 6]));
-                h(i) = plot3(pts(:,1),pts(:,2),pts(:,3),varargin{:});
+            if isempty(this.BinCorners)
+                for i = 1:this.BinCount
+                    binMinMax = this.BinBoundaries(i,:);
+                    pts = cat(1, binMinMax([...
+                        1 2 3; 4 2 3; 4 5 3; 1 5 3; 1 2 3;...
+                        1 2 6; 4 2 6; 4 5 6; 1 5 6; 1 2 6; 1 2 3]),...
+                        nan(1,3), binMinMax([4 2 3; 4 2 6]),...
+                        nan(1,3), binMinMax([4 5 3; 4 5 6]),...
+                        nan(1,3), binMinMax([1 5 3; 1 5 6]));
+                    h(i) = plot3(pts(:,1),pts(:,2),pts(:,3),varargin{:});
+                end
+            else
+                for i = 1:this.BinCount
+                    vtx=[this.BinCorners(1,:,i);this.BinCorners(2,:,i);this.BinCorners(3,:,i);this.BinCorners(4,:,i);this.BinCorners(1,:,i); ...
+                        nan(1,3);this.BinCorners(5,:,i);this.BinCorners(6,:,i);this.BinCorners(7,:,i);this.BinCorners(8,:,i);this.BinCorners(5,:,i); ...
+                        nan(1,3);this.BinCorners(1,:,i);this.BinCorners(5,:,i); ...
+                        nan(1,3);this.BinCorners(2,:,i);this.BinCorners(6,:,i); ...
+                        nan(1,3);this.BinCorners(3,:,i);this.BinCorners(7,:,i); ...
+                        nan(1,3);this.BinCorners(4,:,i);this.BinCorners(8,:,i)];
+                    h(i) = plot3(vtx(:,1),vtx(:,2),vtx(:,3),varargin{:});
+                end
             end
         end
         function h = plot3(this,varargin)

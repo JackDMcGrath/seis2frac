@@ -32,7 +32,7 @@ scaling_exp=1.02;
 %% Prepare Data
 % Seismic Catalogue
 eqs=readmatrix(eq_file); %Import seismicity data
-eqs=[eqs(:,8),eqs(:,7),-eqs(:,9),eqs(:,10)]; % Lon, Lat, Depth, Mag
+eqs=[eqs(:,8),eqs(:,7),-eqs(:,9),eqs(:,10)]; % Lon, Lat, Depth (-ve), Mag
 eqs(:,[5:6])=nan; % Lon, Lat, Depth, Mag, Dist to Fault, Moment
 
 % Fault Limits
@@ -40,15 +40,15 @@ af=[169.0844,-43.9019;171.9880,-42.4733]; % Define ends of fault
 origin=af(1,:); % Set UTM origin as one end of fault
 
 % Convert to UTM
-af=ll2utm([169.0844,-43.9019;171.9880,-42.4733],origin); % Set to UTM
+af=ll2utm(af,origin); % Set to UTM
 af(:,3)=0;
 eqs(:,(1:2))=ll2utm(eqs(:,(1:2)),origin); % Set to UTM
 
 
 % Calculation: co-ords of base of fault
 bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
-af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(bearing))),af(1,2)-(sind(bearing)*(fault_base/tand(bearing))),35;...
-    af(2,1)+(cosd(bearing)*(fault_base/tand(bearing))),af(2,2)-(sind(bearing)*(fault_base/tand(bearing))),35];
+af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
+    af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
 
 % Calculation: Horizontal distance to Fault trace (Map view)
 eqs(:,5)=point_to_line(eqs(:,(1:2)),af(1,:),af(2,:));
@@ -93,7 +93,7 @@ end
 
 %% OcTree subsampling of the data
 
-[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,af,style,grdShape);
+[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,1,MOC,af,style,grdShape);
 
 fprintf('Search Complete: \n %.0f events located into %.0f bins\n',size(eqs,1),OT.BinCount)
 
@@ -131,13 +131,13 @@ bin_center(ii,:)= mean([OT.BinBoundaries(ii,[1:3]);OT.BinBoundaries(ii,[4:6])]);
 
 end
 %%
- figure
- scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),bin_total,bin_density,'filled')
-%  title('Cumulative Seismic Moment per grid')
- xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
- hold on
- plot(ll(:,1),ll(:,2))
- c=colorbar; c.Label.String='Density';
+%  figure
+%  scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),bin_total,bin_density,'filled')
+% %  title('Cumulative Seismic Moment per grid')
+%  xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
+%  hold on
+%  plot(ll(:,1),ll(:,2))
+%  c=colorbar; c.Label.String='Density';
 
 
 
