@@ -4,7 +4,7 @@
 %% Setup
 % Admin
 plot_figures=0;
-eq_file='sup1.csv';
+eq_file='seismic_data.csv';
 coast_file='C:\Jacko\scripts\coastlines\gshhg-bin-2.3.7';
 
 % Geometry
