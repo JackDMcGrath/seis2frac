@@ -77,7 +77,8 @@ classdef OcTree < handle
 %   Created by Sven Holcombe.
 %   1.0     - 2013-03 Initial release
 %   1.1     - 2013-03 Added shrinking bins and allocate/deallocate space
-%   1.2     - 2021-04 Added Cube grids - Jack McGrath
+%   1.2     - 2021-04 Added Cube grids - JDM
+%   1.2     - 2021-04 Added Corner variables - JDM
 %
 %   Please post comments to the FEX page for this entry if you have any
 %   bugs or feature requests.
@@ -90,6 +91,7 @@ classdef OcTree < handle
         BinDepths;
         BinParents = zeros(0,1);
         Properties;
+        BinCorners;
     end
     
     methods
@@ -109,6 +111,7 @@ classdef OcTree < handle
             this.BinDepths = 0;
             this.BinParents(1) = 0;
             this.BinCount = 1;
+            this.BinCorners = [];
             
             % Allow custom setting of Properties
             IP = inputParser;
