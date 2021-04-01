@@ -32,7 +32,7 @@ scaling_exp=1.02;
 %% Prepare Data
 % Seismic Catalogue
 eqs=readmatrix(eq_file); %Import seismicity data
-eqs=[eqs(:,8),eqs(:,7),-eqs(:,9),eqs(:,10)]; % Lon, Lat, Depth, Mag
+eqs=[eqs(:,8),eqs(:,7),-eqs(:,9),eqs(:,10)]; % Lon, Lat, Depth (+ve), Mag
 eqs(:,[5:6])=nan; % Lon, Lat, Depth, Mag, Dist to Fault, Moment
 
 % Fault Limits
@@ -93,7 +93,7 @@ end
 
 %% OcTree subsampling of the data
 
-[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,af,style,grdShape);
+[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,1,MOC,af,dip,style,grdShape);
 
 fprintf('Search Complete: \n %.0f events located into %.0f bins\n',size(eqs,1),OT.BinCount)
 
@@ -131,13 +131,13 @@ bin_center(ii,:)= mean([OT.BinBoundaries(ii,[1:3]);OT.BinBoundaries(ii,[4:6])]);
 
 end
 %%
- figure
- scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),bin_total,bin_density,'filled')
-%  title('Cumulative Seismic Moment per grid')
- xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
- hold on
- plot(ll(:,1),ll(:,2))
- c=colorbar; c.Label.String='Density';
+%  figure
+%  scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),bin_total,bin_density,'filled')
+% %  title('Cumulative Seismic Moment per grid')
+%  xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
+%  hold on
+%  plot(ll(:,1),ll(:,2))
+%  c=colorbar; c.Label.String='Density';
 
 
 
