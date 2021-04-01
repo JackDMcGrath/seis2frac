@@ -3,7 +3,7 @@
 fprintf('This should be branch MAIN\n')
 %% Setup
 % Admin
-plot_figures=0;
+plot_figures=1;
 eq_file='seismic_data.csv';
 coast_file='C:\Jacko\scripts\coastlines\gshhg-bin-2.3.7';
 
@@ -64,7 +64,7 @@ bins=[floor(min(eqs(:,4))*10)/10:0.1:ceil(max(eqs(:,4))*10)/10];
 [n,~,~,btrend,mdl]=gutenberg_richter(eqs(:,4),bins,bvalue,[],MOC,plot_figures);
 
 if isempty(avalue)
-    avalue=mdl.Coefficients.Estimate(1)
+    avalue=mdl.Coefficients.Estimate(1);
 end
 
 if isempty(bvalue)
@@ -93,12 +93,11 @@ end
 
 %% OcTree subsampling of the data
 
-[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,1,MOC,af,style,grdShape);
+[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,af,style,grdShape);
 
 fprintf('Search Complete: \n %.0f events located into %.0f bins\n',size(eqs,1),OT.BinCount)
 
 %% Bin GR
-% Work on bin 451 (bin with most (29) events > MOC when grix=1, binCap=5)
 
 % bin_data=nan(OT.BinCount,6); % events_measured, total_events, bin_volume, fracture_density ,a-value, events > MOC
 bin_events=nan(OT.BinCount,1);
@@ -111,7 +110,7 @@ bin_center=nan(OT.BinCount,3);
 
 for ii=1:OT.BinCount
     pflg=0;
-    if ii==1000
+    if ii==2 || ii==355 ||ii==360
         pflg=1;
     end
     
@@ -128,19 +127,7 @@ bin_volume(ii)=prod([OT.BinBoundaries(ii,4)-OT.BinBoundaries(ii,1), ... % Calcul
     OT.BinBoundaries(ii,6)-OT.BinBoundaries(ii,3)]);
 bin_density(ii)=(10^bin_btrend(1))/bin_volume(ii); % Fracture density in bin inc. "missing" fractures (fractures/km^3)
 bin_center(ii,:)= mean([OT.BinBoundaries(ii,[1:3]);OT.BinBoundaries(ii,[4:6])]); % Calculate bin centers
-
 end
-%%
-%  figure
-%  scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),bin_total,bin_density,'filled')
-% %  title('Cumulative Seismic Moment per grid')
-%  xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
-%  hold on
-%  plot(ll(:,1),ll(:,2))
-%  c=colorbar; c.Label.String='Density';
-
-
-
 
 %% Figures
 
@@ -158,7 +145,7 @@ if plot_figures==1
     hold on
     scatter3(eqs(:,1),eqs(:,2),eqs(:,3),5*(eqs(:,4)+1.5),eqs(:,3)); colormap(flipud(jet)); c=colorbar; c.Label.String='Depth (km)';
     plot(ll(:,1),ll(:,2))
-    plot3(af([1 2 4 3 1],1),af([1 2 4 3 1],2),-af([1 2 4 3 1],3));
+    plot3(af([1 2 4 3 1],1),af([1 2 4 3 1],2),af([1 2 4 3 1],3));
     xlabel('Lon');ylabel('Lat');zlabel('Depth'); axis equal;view([-40,10])
     hold off
     
@@ -173,6 +160,19 @@ if plot_figures==1
     yticks(ytickpoints); yticklabels(10.^ytickpoints);
     for ii=1:length(xtickpoints); xline(xtickpoints(ii)); end;
     for ii=1:length(ytickpoints); yline(ytickpoints(ii)); end;
-        
+    
+    %%
+     figure
+ scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),10*bin_volume/mean(bin_volume),log10(bin_total),'filled')
+ title('Projected Events per grid')
+ xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
+ hold on
+ plot(ll(:,1),ll(:,2))
+ c=colorbar; c.Label.String='Projected Events';
+ caxis([0 ceil(max(bin_alpha))])
+ c.Ticks=[0:1:ceil(max(bin_alpha))];
+ 
+ plot3(100,40,3,'rp','MarkerFaceColor','r')
+      %%  
 end
 

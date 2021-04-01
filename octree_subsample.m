@@ -38,7 +38,6 @@ else
     bearing=atand((fault(2,1)-fault(1,1))/(fault(2,2)-fault(1,2)));
     dip=-atand((fault(3,3)-fault(1,3))/sqrt((fault(3,1)-fault(1,1))^2+(fault(3,2)-fault(1,2))^2));
 end
-display('TRYING HARD')
 
 if rotatestrike==1 % Rotate data so that grid will be fault parallel
     Rotation_matrix=rotz(90-bearing);
@@ -74,22 +73,22 @@ OT.PointBins=ix(find(ix));
 eqs=eqs(in,:);
 
 %%
-if plot_figures==1
-    figure;
-    figname='OcTree Subsample rotated';
-    set(gcf,'renderer','zbuffer','name',figname); title(figname);
-    hold on
-    boxH = OT.plot;
-    cols = lines(OT.BinCount);
-    doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
-    for i = 1:OT.BinCount
-        set(boxH(i),'Color',cols(i,:),'LineWidth', 1)
-        doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
-    end
-    plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
-    xlabel('Parallel');ylabel('Perpendicular');zlabel('Depth');pbaspect([1 1 1]);
-    axis image, view([-90,0])
-end
+% if plot_figures==1
+%     figure;
+%     figname='OcTree Subsample rotated';
+%     set(gcf,'renderer','zbuffer','name',figname); title(figname);
+%     hold on
+%     boxH = OT.plot;
+%     cols = lines(OT.BinCount);
+%     doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
+%     for i = 1:OT.BinCount
+%         set(boxH(i),'Color',cols(i,:),'LineWidth', 1)
+%         doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
+%     end
+%     plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
+%     xlabel('Parallel');ylabel('Perpendicular');zlabel('Depth');pbaspect([1 1 1]);
+%     axis image, view([-90,0])
+% end
 
 if rotatedip==1 % Rotate data back into unrotated form
     Rotation_matrix=rotx(90-dip);
@@ -133,7 +132,7 @@ elseif rotatestrike==1 % Rotate data back into unrotated form
 end
 
 if plot_figures == 1
-    %%
+    
     figure;
     if rotatestrike==1 || rotatedip==1
         figname='OcTree Subsample unrotated';
@@ -151,7 +150,7 @@ if plot_figures == 1
     end
     plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
     xlabel('Lon');ylabel('Lat');zlabel('Depth');pbaspect([1 1 1]);
-    axis image,  view([-57,0])
+    axis image,  view([-36,25])
     
 end
 
