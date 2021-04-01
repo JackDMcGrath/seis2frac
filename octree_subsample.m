@@ -4,6 +4,8 @@ function [OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,fault,
 % Requires OcTree.m (edited by JDM)
 % https://au.mathworks.com/matlabcentral/fileexchange/40732-octree-partitioning-3d-points-into-spatial-subvolumes
 % To use ^ version, just remove 'Division' option from OcTree function
+% Requires rotx from Phased Array System Toolbox
+% If not installed, rotation matrices can be made manually https://au.mathworks.com/help/phased/ref/rotx.html
 %
 % Inputs :
 %     eqs              : Matrix of seismic data, with Lon, Lat, Depth, Magnitude in columns 1:4
@@ -12,6 +14,7 @@ function [OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,fault,
 %     plot_figures     : Plot flag
 %     MOC (optional)   : Magnitude of Completion (subsampling based on this events above this limit
 %     fault (optional) : 4*3 matrix of fault corners (for plotting)
+%     dip (optional)   : Dip of the fault
 %     style            : OcTree division method ('Normal' or 'Weighted')
 %     gridShape        : 'Rectangle' - default subsample or 'Cube' - subsamples as cubes
 %
@@ -33,15 +36,11 @@ end
 display('TRYING HARD')
 
 bearing=atand((fault(2,1)-fault(1,1))/(fault(2,2)-fault(1,2)));
+
 if rotatedata==1 % Rotate data so that grid will be fault parallel
     Rotation_matrix=rotz(90-bearing);
     eqs(:,[1:3]) = (Rotation_matrix\eqs(:,[1:3])')'; % performing the rotation of the data
     fault = (Rotation_matrix\(fault'))';
-%     rotation_angle = -(bearing-90)*pi/180;     % [rad]
-% Rotation_matrix = [cos(rotation_angle)  -sin(rotation_angle); % Rotating matrix for the local reference frame
-% sin(rotation_angle)  cos(rotation_angle)];
-% eqs(:,[1:2]) = (Rotation_matrix\eqs(:,[1:2])')'; % performing the rotation of the data
-% fault(:,[1 2]) = (Rotation_matrix\fault(:,[1:2])')';
 end
 
 
@@ -68,46 +67,35 @@ OT.Points=OT.Points(in,:);
 OT.PointBins=ix(find(ix));
 eqs=eqs(in,:);
 
-    %%
-    figure;
-    figname='OcTree Subsample rotated';
-    set(gcf,'renderer','zbuffer','name',figname); title(figname);
-    hold on
-    boxH = OT.plot;
-    cols = lines(OT.BinCount);
-    doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
-    for i = 1:OT.BinCount
-        set(boxH(i),'Color',cols(i,:),'LineWidth', 1)
-        doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
-    end
-    plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),-fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
-    xlabel('Parallel');ylabel('Perpendicular');zlabel('Depth');pbaspect([1 1 1]);
-    axis image, view(3)
+%%
+figure;
+figname='OcTree Subsample rotated';
+set(gcf,'renderer','zbuffer','name',figname); title(figname);
+hold on
+boxH = OT.plot;
+cols = lines(OT.BinCount);
+doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
+for i = 1:OT.BinCount
+    set(boxH(i),'Color',cols(i,:),'LineWidth', 1)
+    doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
+end
+plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),-fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
+xlabel('Parallel');ylabel('Perpendicular');zlabel('Depth');pbaspect([1 1 1]);
+axis image, view(3)
 
 if rotatedata==1 % Rotate data back into unrotated form
     Rotation_matrix=rotz(bearing-90);
     eqs(:,[1:3]) = (Rotation_matrix\eqs(:,[1:3])')'; % performing the rotation of the data
     fault = (Rotation_matrix\(fault'))';
-  OT.Points = (Rotation_matrix\OT.Points')';  
-  for ii=1:OT.BinCount
-    binMinMax=OT.BinBoundaries(ii,:);
-    pts(:,:,ii)=binMinMax([ 1 2 3; 4 2 3; 4 5 3; 1 5 3;
-                            1 2 6; 4 2 6; 4 5 6; 1 5 6]);
-    pts(:,:,ii)=(Rotation_matrix\pts(:,:,ii)')';
-    OT.BinBoundaries(ii,:)=[min(pts(:,:,ii)),max(pts(:,:,ii))];
-end  
-  
-  
-  
-%     rotation_angle = -(90-bearing)*pi/180;     % [rad]
-% Rotation_matrix = [cos(rotation_angle)  -sin(rotation_angle); % Rotating matrix for the local reference frame
-% sin(rotation_angle)  cos(rotation_angle)];
-% eqs(:,[1:2]) = (Rotation_matrix\eqs(:,[1:2])')'; % performing the rotation of the data
-% OT.Points(:,[1:2]) = (Rotation_matrix\OT.Points(:,[1:2])')';
-% OT.BinBoundaries(:,[1:2]) = (Rotation_matrix\OT.BinBoundaries(:,[1:2])')';
-% OT.BinBoundaries(:,[4:5]) = (Rotation_matrix\OT.BinBoundaries(:,[4:5])')';
-% fault(:,[1 2]) = (Rotation_matrix\fault(:,[1:2])')';
-
+    OT.Points = (Rotation_matrix\OT.Points')';
+    for ii=1:OT.BinCount
+        binMinMax=OT.BinBoundaries(ii,:);
+        OT.BinCorners(:,:,ii)=binMinMax([ 1 2 3; 4 2 3; 4 5 3; 1 5 3;
+            1 2 6; 4 2 6; 4 5 6; 1 5 6]);
+        OT.BinCorners(:,:,ii)=(Rotation_matrix\OT.BinCorners(:,:,ii)')';
+        OT.BinBoundaries(ii,:)=[min(OT.BinCorners(:,:,ii)),max(OT.BinCorners(:,:,ii))];
+    end
+    
 end
 
 
@@ -117,26 +105,17 @@ if plot_figures == 1
     figname='OcTree Subsample unrotated';
     set(gcf,'renderer','zbuffer','name',figname); title(figname);
     hold on
-%     boxH = OT.plot;
-%     cols = lines(OT.BinCount);
-%     doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
-%     for i = 1:OT.BinCount
-%         set(boxH(i),'Color',cols(i,:),'LineWidth', 1)
-%         doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
-%     end
-
     h = zeros(OT.BinCount,1);
-%     boxH = OT.plot;
     cols = lines(OT.BinCount);
     doplot3 = @(p,varargin)plot3(p(:,1),p(:,2),p(:,3),varargin{:});
     for i = 1:OT.BinCount
-        vtx=[pts(1,:,i);pts(2,:,i);pts(3,:,i);pts(4,:,i);pts(1,:,i); ... 
-            nan(1,3);pts(5,:,i);pts(6,:,i);pts(7,:,i);pts(8,:,i);pts(5,:,i); ...
-            nan(1,3);pts(1,:,i);pts(5,:,i); ...
-            nan(1,3);pts(2,:,i);pts(6,:,i); ...
-            nan(1,3);pts(3,:,i);pts(7,:,i); ...
-            nan(1,3);pts(4,:,i);pts(8,:,i)];        
-            h(i) = plot3(vtx(:,1),vtx(:,2),vtx(:,3),'Color',cols(i,:),'LineWidth', 1);
+        vtx=[OT.BinCorners(1,:,i);OT.BinCorners(2,:,i);OT.BinCorners(3,:,i);OT.BinCorners(4,:,i);OT.BinCorners(1,:,i); ...
+            nan(1,3);OT.BinCorners(5,:,i);OT.BinCorners(6,:,i);OT.BinCorners(7,:,i);OT.BinCorners(8,:,i);OT.BinCorners(5,:,i); ...
+            nan(1,3);OT.BinCorners(1,:,i);OT.BinCorners(5,:,i); ...
+            nan(1,3);OT.BinCorners(2,:,i);OT.BinCorners(6,:,i); ...
+            nan(1,3);OT.BinCorners(3,:,i);OT.BinCorners(7,:,i); ...
+            nan(1,3);OT.BinCorners(4,:,i);OT.BinCorners(8,:,i)];
+        h(i) = plot3(vtx(:,1),vtx(:,2),vtx(:,3),'Color',cols(i,:),'LineWidth', 1);
         doplot3(eqs(OT.PointBins==i,:),'.','Color',cols(i,:))
     end
     plot3(fault([1 2 4 3 1],1),fault([1 2 4 3 1],2),-fault([1 2 4 3 1],3),'LineWidth',3,'Color','k');
@@ -146,4 +125,3 @@ if plot_figures == 1
 end
 
 end
-    
