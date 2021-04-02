@@ -122,8 +122,8 @@ classdef QuadTree < handle
             
             
             if strcmpi('Square',this.Properties.grdShape)
-                maxd_ix=find(max([this.BinBoundaries(3)-this.BinBoundaries(1), ... % Find max dimension
-                    this.BinBoundaries(4)-this.BinBoundaries(2)]));
+                sides=[this.BinBoundaries(3)-this.BinBoundaries(1),this.BinBoundaries(4)-this.BinBoundaries(2)];
+                maxd_ix=find(sides==max(sides));
                 maxd=this.BinBoundaries(maxd_ix+2)-this.BinBoundaries(maxd_ix); % Find length of said dimension
                 this.BinBoundaries(3:4)=this.BinBoundaries(1:2)+maxd; % Taking min point as orgin, make cube
             end
@@ -210,8 +210,8 @@ classdef QuadTree < handle
             newBounds = minMidMax([...
                 1 2 3 4;
                 1 4 3 6;
-                3 4 5 6;
-                3 2 5 4]);
+                3 2 5 4;
+                3 4 5 6]);
             
             % Determine to which of these 8 bins each current point belongs
             binMap = cat(3,[0 0],[0 1],[1 0],[1 1]);
