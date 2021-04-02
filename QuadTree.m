@@ -9,7 +9,7 @@ classdef QuadTree < handle
 %    OT = QuadTree(...,'PropertyName',VALUE,...) takes any of the following
 %    property values:
 %
-%     binCapacity - Maximum number of points a bin may contain. If more
+%     maxbinCapacity - Maximum number of points a bin may contain. If more
 %                   points exist, the bin will be recursively subdivided.
 %                   Defaults to ceil(numPts/10).
 %     maxDepth    - Maximum number of times a bin may be subdivided.
@@ -32,7 +32,7 @@ classdef QuadTree < handle
 %    Example 1: Decompose 200 random points into bins of 20 points or less,
 %             then display each bin with its points in a separate colour.
 %        pts = (rand(200,3)-0.5).^2;
-%        OT = QuadTree(pts,'binCapacity',20);        
+%        OT = QuadTree(pts,'maxbinCapacity',20);        
 %        figure
 %        boxH = OT.plot;
 %        cols = lines(OT.BinCount);
@@ -46,7 +46,7 @@ classdef QuadTree < handle
 %    Example 2: Decompose 200 random points into bins of 10 points or less,
 %             shrunk to minimallly encompass their points, then display.
 %        pts = rand(200,3);
-%        OT = QuadTree(pts,'binCapacity',10,'style','weighted');
+%        OT = QuadTree(pts,'maxbinCapacity',10,'style','weighted');
 %        OT.shrink
 %        figure
 %        boxH = OT.plot;
@@ -111,7 +111,8 @@ classdef QuadTree < handle
             
             % Allow custom setting of Properties
             IP = inputParser;
-            IP.addParamValue('binCapacity',ceil(numPts)/10);
+            IP.addParamValue('maxbinCapacity',ceil(numPts)/10);
+            IP.addParamValue('minbinCapacity',0); %% Overrides maxbinCapacity
             IP.addParamValue('maxDepth',inf);
             IP.addParamValue('maxSize',inf);
             IP.addParamValue('minSize',1000 * eps);
@@ -143,8 +144,8 @@ classdef QuadTree < handle
         function preallocateSpace(this)
             numPts = size(this.Points,1);
             numBins = numPts;
-            if isfinite(this.Properties.binCapacity)
-                numBins = ceil(2*numPts/this.Properties.binCapacity);
+            if isfinite(this.Properties.maxbinCapacity)
+                numBins = ceil(2*numPts/this.Properties.maxbinCapacity);
             end
             this.BinDepths(numBins) = 0;
             this.BinParents(numBins) = 0;
@@ -170,15 +171,16 @@ classdef QuadTree < handle
                 binEdgeSize = diff(thisBounds([1:2;3:4]));
                 minEdgeSize = min(binEdgeSize);
                 maxEdgeSize = max(binEdgeSize);
-                if minEdgeSize < this.Properties.minSize
+                PointCount = nnz(this.PointBins==binNo);
+                if minEdgeSize < this.Properties.minSize || PointCount < this.Properties.minbinCapacity %% Issue rn is that if two few eqs, doesn't return to parent stage, just stops dividing
                     continue;
                 end
-                
+                                
                 % There are two conditions under which we should divide
                 % this bin. 1: It's bigger than maxSize. 2: It contains
-                % more points than binCapacity.
+                % more points than maxbinCapacity.
                 oldCount = this.BinCount;
-                if nnz(this.PointBins==binNo) > this.Properties.binCapacity
+                if nnz(this.PointBins==binNo) > this.Properties.maxbinCapacity
                     this.divideBin(binNo);
                     this.divide(oldCount+1:this.BinCount);
                     continue;

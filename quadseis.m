@@ -17,7 +17,7 @@ Rotation_matrix=rotz(90-bearing);
 eqs(:,[1:3]) = (Rotation_matrix\eqs(:,[1:3])')'; % performing the rotation of the data
 
 af = (Rotation_matrix\af')';
-[QT]=QuadTree(eqs(:,[1:2]),'binCapacity',10,'minSize',10,'grdShape','Square');
+[QT]=QuadTree(eqs(:,[1:2]),'minbinCapacity',10,'maxbinCapacity',40,'minSize',10,'grdShape','Square');
 %%
 
 %     figure;
@@ -65,7 +65,7 @@ Rotation_matrix=rotz(bearing-90);
     
     figure;
 
-        figname='OcTree Subsample';
+        figname='QuadTree Subsample';
 
     set(gcf,'renderer','zbuffer','name',figname); title(figname);
     hold on
