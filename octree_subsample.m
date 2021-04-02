@@ -30,7 +30,7 @@ if exist('MOC')~=1
     MOC = -Inf;
 end
 
-if exist('fault')~=1
+if exist('fault')~=1 || isempty(fault)
     fault=nan(4,3);
     rotatestrike=0;
     rotatedip=0;

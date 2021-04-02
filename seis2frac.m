@@ -8,7 +8,7 @@ eq_file='seismic_data.csv';
 coast_file='C:\Jacko\scripts\coastlines\gshhg-bin-2.3.7';
 
 % Geometry
-gridx=1; % set size of cube or minSize of OcTree
+gridx=10; % set size of cube or minSize of OcTree
 binCapacity=20; % Maximum number of events > MOC in OcTree
 style='Normal'; % OcTree division method ('Normal' or 'Weighted')
 grdShape='Cube'; % Shape of OcTree grids ('Normal' or 'Cube')
@@ -37,21 +37,24 @@ eqs(:,[5:6])=nan; % Lon, Lat, Depth, Mag, Dist to Fault, Moment
 
 % Fault Limits
 af=[169.0844,-43.9019;171.9880,-42.4733]; % Define ends of fault
-origin=af(1,:); % Set UTM origin as one end of fault
-
+if ~isempty(af)
+    origin=af(1,:); % Set UTM origin as one end of fault
+    % Calculation: co-ords of base of fault
+bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
+af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
+    af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
+% Calculation: Horizontal distance to Fault trace (Map view)
+eqs(:,5)=point_to_line(eqs(:,(1:2)),af(1,:),af(2,:));
+else
+    origin=mean(eqs(:,[1 2]));
+end
 % Convert to UTM
 af=ll2utm(af,origin); % Set to UTM
 af(:,3)=0;
 eqs(:,(1:2))=ll2utm(eqs(:,(1:2)),origin); % Set to UTM
 
 
-% Calculation: co-ords of base of fault
-bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
-af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
-    af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
 
-% Calculation: Horizontal distance to Fault trace (Map view)
-eqs(:,5)=point_to_line(eqs(:,(1:2)),af(1,:),af(2,:));
 
 % Calculation: Seismic Moment of each event
 eqs(:,6)=10.^((3/2).*(eqs(:,4)+6.07));
@@ -145,7 +148,9 @@ if plot_figures==1
     hold on
     scatter3(eqs(:,1),eqs(:,2),eqs(:,3),5*(eqs(:,4)+1.5),eqs(:,3)); colormap(flipud(jet)); c=colorbar; c.Label.String='Depth (km)';
     plot(ll(:,1),ll(:,2))
+    try
     plot3(af([1 2 4 3 1],1),af([1 2 4 3 1],2),af([1 2 4 3 1],3));
+    end
     xlabel('Lon');ylabel('Lat');zlabel('Depth'); axis equal;view([-40,10])
     hold off
     
