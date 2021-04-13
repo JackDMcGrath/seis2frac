@@ -1,6 +1,6 @@
 %% SEIS2FRAC
 % Script for analysing seismicity and relating to fracture propeties
-fprintf('This should be branch MAIN\n')
+fprintf('This should be branch QUADTREE\n')
 %% Setup
 % Admin
 plot_figures=1;
@@ -36,10 +36,11 @@ eqs=[eqs(:,8),eqs(:,7),-eqs(:,9),eqs(:,10)]; % Lon, Lat, Depth (-ve), Mag
 eqs(:,[5:6])=nan; % Lon, Lat, Depth, Mag, Dist to Fault, Moment
 
 % Fault Limits
-af=[169.0844,-43.9019;171.9880,-42.4733]; % Define ends of fault
+af=[169.0844,-43.9019,0;171.9880,-42.4733,0]; % Define ends of fault
 if ~isempty(af)
-    origin=af(1,:); % Set UTM origin as one end of fault
+    origin=af(1,1:2); % Set UTM origin as one end of fault
     % Calculation: co-ords of base of fault
+    af(:,1:2)=ll2utm(af(:,1:2),origin); % Set to UTM
 bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
 af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
     af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
@@ -49,8 +50,6 @@ else
     origin=mean(eqs(:,[1 2]));
 end
 % Convert to UTM
-af=ll2utm(af,origin); % Set to UTM
-af(:,3)=0;
 eqs(:,(1:2))=ll2utm(eqs(:,(1:2)),origin); % Set to UTM
 
 
@@ -113,9 +112,9 @@ bin_center=nan(OT.BinCount,3);
 
 for ii=1:OT.BinCount
     pflg=0;
-    if ii==2 || ii==355 ||ii==360
-        pflg=1;
-    end
+%     if ii==2 || ii==355 ||ii==360
+%         pflg=1;
+%     end
     
 bin_eqs=eqs(OT.PointBins==ii,:); % Get events in one bin
 
@@ -131,6 +130,22 @@ bin_volume(ii)=prod([OT.BinBoundaries(ii,4)-OT.BinBoundaries(ii,1), ... % Calcul
 bin_density(ii)=(10^bin_btrend(1))/bin_volume(ii); % Fracture density in bin inc. "missing" fractures (fractures/km^3)
 bin_center(ii,:)= mean([OT.BinBoundaries(ii,[1:3]);OT.BinBoundaries(ii,[4:6])]); % Calculate bin centers
 end
+
+
+%% Determine Upper and Lower Limits of Seismicity
+
+[QT] = quadtree_subsample(eqs(:,1:3),af(1:2,:),bearing);
+
+seis_depths=nan(QT.BinCount,4);
+
+for nbin=1:QT.BinCount
+    if sum(QT.PointBins==nbin)>=30
+        seis_depths(nbin,1:2)=mean(QT.BinCorners(1:4,:,nbin)); % Find bin center
+        [seis_depths(nbin,3),seis_depths(nbin,4)] = upper_lower_seis(eqs(find(QT.PointBins==nbin),3));
+    end
+end
+
+
 
 %% Figures
 
@@ -176,6 +191,9 @@ if plot_figures==1
  c=colorbar; c.Label.String='Projected Events';
  caxis([0 ceil(max(bin_alpha))])
  c.Ticks=[0:1:ceil(max(bin_alpha))];
+ for ii=1:ceil(max(bin_alpha))+1
+ c.TickLabels{ii}=num2str(10.^c.Ticks(ii));
+ end
  
  plot3(100,40,3,'rp','MarkerFaceColor','r')
       %%  
