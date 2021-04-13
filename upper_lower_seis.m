@@ -1,4 +1,4 @@
-function [lowerseis,upperseis] = upper_lower_seis(depths)
+function [upperseis,lowerseis] = upper_lower_seis(depths)
 %% UPPER_LOWER_SEIS
 % Script to take the earthquake depths and assign an upper and lower limit
 % of seismicity based off the 10-90% limits of the cumulative frequencies
