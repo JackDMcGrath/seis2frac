@@ -1,10 +1,10 @@
-function [QT] = quadtree_subsample(eqs,fault,bearing )
+function [QT] = quadtree_subsample(eqs,fault,bearing,QuadminbinCapacity )
 
 
 Rotation_matrix=rotz(90-bearing);
 eqs = (Rotation_matrix\eqs')'; % performing the rotation of the data
 fault = (Rotation_matrix\fault')';
-[QT]=QuadTree(eqs(:,[1:2]),'minbinCapacity',30,'maxbinCapacity',150,'minSize',10,'grdShape','Square');
+[QT]=QuadTree(eqs(:,[1:2]),'minbinCapacity',QuadminbinCapacity,'maxbinCapacity',150,'minSize',10,'grdShape','Square');
 %%
 
 %     figure;

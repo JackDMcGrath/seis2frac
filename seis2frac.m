@@ -9,7 +9,8 @@ coast_file='C:\Jacko\scripts\coastlines\gshhg-bin-2.3.7';
 
 % Geometry
 gridx=10; % set size of cube or minSize of OcTree
-binCapacity=20; % Maximum number of events > MOC in OcTree
+OctbinCapacity=20; % Maximum number of events > MOC in OcTree
+QuadminbinCapacity=10;
 style='Normal'; % OcTree division method ('Normal' or 'Weighted')
 grdShape='Cube'; % Shape of OcTree grids ('Normal' or 'Cube')
 dip=60; % set fault dip
@@ -95,7 +96,7 @@ end
 
 %% OcTree subsampling of the data
 
-[OT,eqs]=octree_subsample(eqs,binCapacity,gridx,plot_figures,MOC,af,style,grdShape);
+[OT,eqs]=octree_subsample(eqs,OctbinCapacity,gridx,plot_figures,MOC,af,style,grdShape);
 
 fprintf('Search Complete: \n %.0f events located into %.0f bins\n',size(eqs,1),OT.BinCount)
 
@@ -128,22 +129,31 @@ bin_volume(ii)=prod([OT.BinBoundaries(ii,4)-OT.BinBoundaries(ii,1), ... % Calcul
     OT.BinBoundaries(ii,5)-OT.BinBoundaries(ii,2), ...
     OT.BinBoundaries(ii,6)-OT.BinBoundaries(ii,3)]);
 bin_density(ii)=(10^bin_btrend(1))/bin_volume(ii); % Fracture density in bin inc. "missing" fractures (fractures/km^3)
-bin_center(ii,:)= mean([OT.BinBoundaries(ii,[1:3]);OT.BinBoundaries(ii,[4:6])]); % Calculate bin centers
+for ii=1:OT.BinCount
+    bin_center(ii,:)=mean(OT.BinCorners(:,:,ii));
+end
 end
 
 
 %% Determine Upper and Lower Limits of Seismicity
 
-[QT] = quadtree_subsample(eqs(:,1:3),af(1:2,:),bearing);
+[QT] = quadtree_subsample(eqs(:,1:3),af(1:2,:),bearing,QuadminbinCapacity);
 
 seis_depths=nan(QT.BinCount,4);
 
 for nbin=1:QT.BinCount
-    if sum(QT.PointBins==nbin)>=30
+    if sum(QT.PointBins==nbin)>=QuadminbinCapacity
         seis_depths(nbin,1:2)=mean(QT.BinCorners(1:4,:,nbin)); % Find bin center
         [seis_depths(nbin,3),seis_depths(nbin,4)] = upper_lower_seis(eqs(find(QT.PointBins==nbin),3));
     end
 end
+
+seis_ix=find(~isnan(seis_depths(:,1))); % identify bins that have more upper-lower depths
+%%
+exhumation_time
+
+
+
 
 
 
