@@ -42,11 +42,11 @@ if ~isempty(af)
     origin=af(1,1:2); % Set UTM origin as one end of fault
     % Calculation: co-ords of base of fault
     af(:,1:2)=ll2utm(af(:,1:2),origin); % Set to UTM
-bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
-af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
-    af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
-% Calculation: Horizontal distance to Fault trace (Map view)
-eqs(:,5)=point_to_line(eqs(:,(1:2)),af(1,:),af(2,:));
+    bearing=atand((af(2,1)-af(1,1))/(af(2,2)-af(1,2)));
+    af(3:4,:)=[af(1,1)+(cosd(bearing)*(fault_base/tand(dip))),af(1,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base;...
+        af(2,1)+(cosd(bearing)*(fault_base/tand(dip))),af(2,2)-(sind(bearing)*(fault_base/tand(dip))),-fault_base];
+    % Calculation: Horizontal distance to Fault trace (Map view)
+    eqs(:,5)=point_to_line(eqs(:,(1:2)),af(1,:),af(2,:));
 else
     origin=mean(eqs(:,[1 2]));
 end
@@ -113,25 +113,25 @@ bin_center=nan(OT.BinCount,3);
 
 for ii=1:OT.BinCount
     pflg=0;
-%     if ii==2 || ii==355 ||ii==360
-%         pflg=1;
-%     end
+    %     if ii==2 || ii==355 ||ii==360
+    %         pflg=1;
+    %     end
     
-bin_eqs=eqs(OT.PointBins==ii,:); % Get events in one bin
-
-[bin_n,~,bin_alpha(ii),bin_btrend]=gutenberg_richter(bin_eqs(:,4),bins,bvalue,[],MOC,pflg); % Calculate GR trends for bin
-
-bin_events(ii)=size(bin_eqs,1);
-bin_MOC(ii)=length(find(bin_eqs(:,4)>=MOC));
-bin_total(ii)=10^bin_btrend(1);
-
-bin_volume(ii)=prod([OT.BinBoundaries(ii,4)-OT.BinBoundaries(ii,1), ... % Calculate bin volume (km^3)
-    OT.BinBoundaries(ii,5)-OT.BinBoundaries(ii,2), ...
-    OT.BinBoundaries(ii,6)-OT.BinBoundaries(ii,3)]);
-bin_density(ii)=(10^bin_btrend(1))/bin_volume(ii); % Fracture density in bin inc. "missing" fractures (fractures/km^3)
-for ii=1:OT.BinCount
-    bin_center(ii,:)=mean(OT.BinCorners(:,:,ii));
-end
+    bin_eqs=eqs(OT.PointBins==ii,:); % Get events in one bin
+    
+    [bin_n,~,bin_alpha(ii),bin_btrend]=gutenberg_richter(bin_eqs(:,4),bins,bvalue,[],MOC,pflg); % Calculate GR trends for bin
+    
+    bin_events(ii)=size(bin_eqs,1);
+    bin_MOC(ii)=length(find(bin_eqs(:,4)>=MOC));
+    bin_total(ii)=10^bin_btrend(1);
+    
+    bin_volume(ii)=prod([OT.BinBoundaries(ii,4)-OT.BinBoundaries(ii,1), ... % Calculate bin volume (km^3)
+        OT.BinBoundaries(ii,5)-OT.BinBoundaries(ii,2), ...
+        OT.BinBoundaries(ii,6)-OT.BinBoundaries(ii,3)]);
+    bin_density(ii)=(10^bin_btrend(1))/bin_volume(ii); % Fracture density in bin inc. "missing" fractures (fractures/km^3)
+    for ii=1:OT.BinCount
+        bin_center(ii,:)=mean(OT.BinCorners(:,:,ii));
+    end
 end
 
 
@@ -141,21 +141,31 @@ end
 
 seis_depths=nan(QT.BinCount,4);
 
-for nbin=1:QT.BinCount
-    if sum(QT.PointBins==nbin)>=QuadminbinCapacity
-        seis_depths(nbin,1:2)=mean(QT.BinCorners(1:4,:,nbin)); % Find bin center
-        [seis_depths(nbin,3),seis_depths(nbin,4)] = upper_lower_seis(eqs(find(QT.PointBins==nbin),3));
+for ii=1:QT.BinCount
+    if sum(QT.PointBins==ii)>=QuadminbinCapacity
+        seis_depths(ii,1:2)=mean(QT.BinCorners(1:4,:,ii)); % Find bin center
+        [seis_depths(ii,3),seis_depths(ii,4)] = upper_lower_seis(eqs(find(QT.PointBins==ii),3));
     end
+    quad_center(ii,:)=mean(QT.BinCorners(1:4,1:2,ii));
 end
 
-seis_ix=find(~isnan(seis_depths(:,1))); % identify bins that have more upper-lower depths
+seis_ix=find(~isnan(seis_depths(:,1))); % identify bins that have upper-lower depths
 %%
-exhumation_time
 
+exhum=readmatrix('C:\Jacko\NZ 2020\seis2frac\Modeled_exhumation_rates_grid_points.csv');
+exhum(:,(1:2))=ll2utm(exhum(:,(1:2)),origin);
 
+% [thickness,fracture_time,ex]=exhumation_time(bin_center,quad_center,exhum,seis_depths,seis_ix,OT,QT,1,af,origin);
 
+% We now have the seismogenic thickness, exhumation rate and the total
+% amount of time availiable for fracturing for the OctTree
+plot(thickness,ex,'.')
 
+% Use fracture time and the number of events per cube in 10 years to work
+% out total fractures
 
+bin_total_fractures=(fracture_time/10).*bin_total;
+bin_fracture_density=bin_total_fractures./bin_volume;
 
 %% Figures
 
@@ -174,7 +184,7 @@ if plot_figures==1
     scatter3(eqs(:,1),eqs(:,2),eqs(:,3),5*(eqs(:,4)+1.5),eqs(:,3)); colormap(flipud(jet)); c=colorbar; c.Label.String='Depth (km)';
     plot(ll(:,1),ll(:,2))
     try
-    plot3(af([1 2 4 3 1],1),af([1 2 4 3 1],2),af([1 2 4 3 1],3));
+        plot3(af([1 2 4 3 1],1),af([1 2 4 3 1],2),af([1 2 4 3 1],3));
     end
     xlabel('Lon');ylabel('Lat');zlabel('Depth'); axis equal;view([-40,10])
     hold off
@@ -192,20 +202,37 @@ if plot_figures==1
     for ii=1:length(ytickpoints); yline(ytickpoints(ii)); end;
     
     %%
-     figure
- scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),10*bin_volume/mean(bin_volume),log10(bin_total),'filled')
- title('Projected Events per grid')
- xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
- hold on
- plot(ll(:,1),ll(:,2))
- c=colorbar; c.Label.String='Projected Events';
- caxis([0 ceil(max(bin_alpha))])
- c.Ticks=[0:1:ceil(max(bin_alpha))];
- for ii=1:ceil(max(bin_alpha))+1
- c.TickLabels{ii}=num2str(10.^c.Ticks(ii));
- end
- 
- plot3(100,40,3,'rp','MarkerFaceColor','r')
-      %%  
+    figure
+    scatter3(bin_center(:,1),bin_center(:,2),bin_center(:,3),10*bin_volume/mean(bin_volume),log10(bin_total),'filled')
+    title('Projected Events per grid')
+    xlabel('Lon');ylabel('Lat');zlabel('Depth');%%pbaspect([1 1 1])
+    hold on
+    plot(ll(:,1),ll(:,2))
+    c=colorbar; c.Label.String='Projected Events';
+    caxis([0 ceil(max(bin_alpha))])
+    c.Ticks=[0:1:ceil(max(bin_alpha))];
+    for ii=1:ceil(max(bin_alpha))+1
+        c.TickLabels{ii}=num2str(10.^c.Ticks(ii));
+    end
+    
+    plot3(100,40,3,'rp','MarkerFaceColor','r')
+    %%
+    figure
+    title('Quad Bin Numbers')
+    xlabel('Lon');ylabel('Lat');
+    hold on
+    plot(ll(:,1),ll(:,2))
+    
+    try
+        plot(af([1 2],1),af([1 2],2));
+    end
+    axis equal
+    
+    for ii=1:QT.BinCount
+        try
+            plot(QT.BinCorners(:,1,ii),QT.BinCorners(:,2,ii))
+            text(quad_center(ii,1),quad_center(ii,2),num2str(ii),'FontSize',5)
+        end
+    end
 end
 
